@@ -377,7 +377,12 @@
       } else {
         ansMatch = analysis.match(/ОТВЕТ:\s*([\d\/\s,\.]+)/i);
       }
+      // Если не нашли ОТВЕТ: — ищем последнее число в тексте как fallback
       let answer = ansMatch ? ansMatch[1].trim() : '';
+      if (!answer) {
+        const numMatch = analysis.match(/([\d]+(?:[\/,\.][\d]+)?)\s*$/) || analysis.match(/=\s*([\d]+(?:[\/,\.][\d]+)?)/);
+        if (numMatch) answer = numMatch[1].trim();
+      }
       if (!answer) throw new Error('empty');
       if (!fmt.includes('вариант') && !fmt.includes('буква')) {
         let fmtHint = 'просто число';
