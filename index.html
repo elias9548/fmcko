@@ -296,11 +296,11 @@
     } catch (e) { clearTimeout(timer); throw e; }
   }
 
-  async function askModel(model, messages) {
+  async function askModel(model, messages, provider = 'openrouter') {
     const res = await fetchWithTimeout(OR_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, messages })
+      body: JSON.stringify({ provider, model, messages })
     }, TIMEOUT_MS);
     if (!res.ok) {
       const errText = await res.text();
@@ -323,11 +323,11 @@
     return ansMatch ? ansMatch[1].trim() : '';
   }
 
-  async function solveWithModel(model, imageUrl) {
+  async function solveWithModel(model, imageUrl, provider = 'openrouter') {
     const analysis = await askModel(model, [{ role: 'user', content: [
       { type: 'image_url', image_url: { url: imageUrl } },
       { type: 'text', text: PROMPT_SOLVE }
-    ]}]);
+    ]}], provider);
     const fmtMatch = analysis.match(/ФОРМАТ:\s*(\S+)/i);
     const fmt = fmtMatch ? fmtMatch[1].toLowerCase().trim() : 'целое';
     let answer = extractAnswer(analysis, fmt);
@@ -339,7 +339,7 @@
       const check = await askModel(model, [{ role: 'user', content: [
         { type: 'image_url', image_url: { url: imageUrl } },
         { type: 'text', text: `Реши задачу на изображении самостоятельно, пошагово. Проверь каждое действие.\nВ конце напиши СТРОГО одну строку:\nФИНАЛЬНЫЙ ОТВЕТ: <${fmtHint}>` }
-      ]}]);
+      ]}], provider);
       const finalMatch = check.match(/ФИНАЛЬНЫЙ ОТВЕТ:\s*([\d\/\s,\.]+)/i);
       if (finalMatch) answer = finalMatch[1].trim();
     }
@@ -413,8 +413,8 @@
 
       // Оба ИИ работают параллельно
       const [ans1, ans2] = await Promise.allSettled([
-        solveWithModel('openrouter/healer-alpha', imageUrl),
-        solveWithModel('mistralai/mistral-small-3.1-24b-instruct:free', imageUrl)
+        solveWithModel('openrouter/healer-alpha', imageUrl, 'openrouter'),
+        solveWithModel('mistral-small-latest', imageUrl, 'mistral')
       ]);
 
       const r1 = ans1.status === 'fulfilled' ? ans1.value : null;
