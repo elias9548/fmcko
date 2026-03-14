@@ -453,6 +453,8 @@
         return;
       }
       savedAnswers[num] = val;
+      const navBtn = document.querySelector(`[data-page="${num}"]`);
+      if (navBtn) navBtn.classList.add('yellow');
       const next = num + 1;
       if (next <= 9) showPage(String(next));
     });
