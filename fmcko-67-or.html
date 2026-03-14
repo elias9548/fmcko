@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Компьютерное тестирование</title>
+  <style>
+    * { margin: 0px; font-size: 15pt; font-family: Tahoma, Arial, Helvetica, Verdana; }
+    html { height: 100%; }
+    body { min-height: 100%; position: relative; min-width: 800px; font-family: Tahoma, Arial, Helvetica, Verdana; background: #ffffff; color: #000; }
+
+    /* ШАПКА */
+    .topbar {
+      height: 110px;
+      box-sizing: border-box;
+      background-color: #f0f0f0;
+      border-bottom: 1px solid #CCDDFF;
+      position: relative;
+      padding: 7px 10px;
+    }
+
+    .tasks-label {
+      margin: 0 0 5px 8px;
+      font-size: 11.5pt;
+      font-weight: normal;
+      color: #000033;
+      font-family: Tahoma, Arial, Helvetica, Verdana;
+    }
+
+    .nav-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* кнопки навигации точь-в-точь button.qnum с сайта */
+    .nav-btn {
+      border-radius: 0px;
+      cursor: pointer;
+      background: #ffffff;
+      font-size: 15pt;
+      color: #003300;
+      padding: 2px 3px 2px 3px;
+      float: left;
+      margin: 4px;
+      border: 1px solid #333399;
+      text-align: center;
+      min-width: 30px;
+      font-family: Tahoma, Arial, Helvetica, Verdana;
+    }
+    .nav-btn:hover { background: #f0f0f0; }
+    .nav-btn.finish      { min-width: auto; padding: 2px 8px; }
+
+    /* активная кнопка — button.qramka с сайта */
+    .nav-btn.active {
+      margin: 2px;
+      padding: 1px 3px 1px 3px;
+      border: 3px solid;
+      border-color: #ff4444;
+    }
+
+    /* отвеченные задания жёлтые */
+    .nav-btn.yellow { background: #ffff88; }
+    .nav-btn.yellow:hover { background: #f0f044; }
+
+    /* таймер */
+    .timer {
+      position: absolute;
+      top: 2px;
+      right: 10px;
+      font-size: 19.5px;
+      color: #aaaacc;
+      white-space: nowrap;
+      font-family: Tahoma, Arial, Helvetica, Verdana;
+    }
+
+    /* ОСНОВНОЙ КОНТЕНТ */
+    .content {
+      width: 1020px;
+      padding-left: 10px;
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
+
+    .page.hidden { display: none; }
+
+    /* Подложка инструкции — #help с сайта */
+    .instruction-box {
+      width: 950px;
+      min-height: 780px;
+      background: #f0f0ff;
+      border: 1px solid #bbbbcc;
+      padding: 10px;
+      font-size: 15pt;
+      font-family: Tahoma, Arial, Helvetica, Verdana;
+      line-height: 1.5;
+      color: #000033;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .instruction-bg {
+      position: absolute;
+      inset: 0;
+      background: url('bg.jpg') center center / cover no-repeat;
+      opacity: 0.13;
+      pointer-events: none;
+    }
+
+    .instruction-inner {
+      position: relative;
+      z-index: 1;
+      padding: 10px 12px 16px 10px;
+      font-size: 15pt;
+      line-height: 1.5;
+      color: #000033;
+    }
+
+    .instruction-inner h2 {
+      margin: 0 0 10px 0;
+      font-size: 15pt;
+      font-weight: bold;
+    }
+
+    /* кнопка начать */
+    .start-btn {
+      margin-top: 20px;
+      border-radius: 0px;
+      border: 1px solid #666688;
+      background-color: #F0F0FF;
+      color: #000033;
+      font-size: 15pt;
+      padding: 4px 14px;
+      cursor: pointer;
+      font-family: Tahoma, Arial, Helvetica, Verdana;
+    }
+    .start-btn:hover { cursor: pointer; }
+
+    /* Контейнер задания */
+    .task-wrap {
+      width: 1020px;
+      min-height: 520px;
+      margin: 0px 5px 0px 5px;
+      padding: 0px;
+    }
+
+    /* Заголовок "Ответ запишите..." */
+    .answer-header {
+      width: 1010px;
+      box-sizing: border-box;
+      border: 1px solid #454545;
+      background: #ffffff;
+      text-align: center;
+      font-size: 15pt;
+      font-weight: bold;
+      padding: 3px 6px;
+      margin: 0 0 30px 0;
+      font-family: Tahoma, Arial, Helvetica, Verdana;
+    }
+
+    .task-body {
+      font-size: 15pt;
+      color: #000;
+      font-family: Tahoma, Arial, Helvetica, Verdana;
+    }
+
+    .lead {
+      margin: 0 0 16px 0;
+      font-size: 15pt;
+      line-height: 1.4;
+    }
+
+    .formula-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-left: 2px;
+      margin-bottom: 20px;
+    }
+
+    .fraction {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1;
+      color: #000;
+    }
+
+    .fraction .top {
+      border-bottom: 2px solid #1f1f1f;
+      padding: 0 14px 3px 14px;
+      font-size: 15pt;
+    }
+
+    .fraction .bottom {
+      padding-top: 3px;
+      font-size: 15pt;
+    }
+
+    .equal { font-size: 15pt; }
+
+    .small-answer-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #e0f0f0;
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+    }
+
+    .small-answer-input {
+      width: 60px;
+      height: 28px;
+      box-sizing: border-box;
+      border: 1px solid #999999;
+      background: #ffffff;
+      font-size: 15pt;
+      font-family: Tahoma, Arial, Helvetica, Verdana;
+      padding: 2px 4px;
+      outline: none;
+    }
+
+    .dot { font-size: 15pt; line-height: 1; }
+
+    /* кнопка сохранить */
+    .save-btn {
+      border-radius: 0px;
+      border: 1px solid #666688;
+      background-color: #F0F0FF;
+      color: #000;
+      font-size: 15pt;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-family: Tahoma, Arial, Helvetica, Verdana;
+      margin-top: 14px;
+      display: block;
+    }
+    .save-btn:hover { cursor: pointer; }
+
+    .expr-indent { margin-left: 20px; }
+
+    /* панель ответа — стиль div.answer с сайта */
+    .answer-panel {
+      background-color: #e0f0f0;
+      font-size: 15pt;
+      color: #000033;
+      padding: 10px 15px 10px 15px;
+      margin: 5px 0 5px 0;
+      border: 1px solid #ccc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 1010px;
+    }
+
+    .answer-panel label {
+      font-size: 15pt;
+      color: #000033;
+      font-family: Tahoma, Arial, Helvetica, Verdana;
+    }
+
+    .answer-wide-input {
+      width: 220px;
+      height: 30px;
+      box-sizing: border-box;
+      border: 1px solid #999999;
+      background: #ffffff;
+      font-size: 15pt;
+      font-family: Tahoma, Arial, Helvetica, Verdana;
+      padding: 2px 5px;
+      outline: none;
+    }
+
+    .long-task-text {
+      font-size: 15pt;
+      line-height: 1.4;
+      margin-bottom: 2px;
+      font-family: Tahoma, Arial, Helvetica, Verdana;
+    }
+
+    /* дробное поле ответа задания 6 — стиль .ff из оригинала */
+    .frac-input-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    /* целая часть смешанного числа */
+    .frac-whole {
+      width: 35px;
+      border: 1px solid #dddddd;
+      font-size: 16pt;
+      font-family: Tahoma, Serif;
+      text-align: center;
+      padding: 2px;
+      background: #fff;
+      outline: none;
+    }
+    /* таблица дроби — точно как .ff в оригинале */
+    .ff {
+      border-collapse: collapse;
+      display: inline-table;
+      vertical-align: middle;
+    }
+    .ff td {
+      text-align: center;
+      font-size: 16pt;
+      padding: 0;
+      border: none;
+      margin: 0;
+    }
+    .ff td.ccc {
+      position: relative;
+      top: -2px;
+    }
+    .ff input {
+      text-align: center;
+      width: 35px;
+      border: 1px solid #dddddd;
+      font-size: 16pt;
+      font-family: Tahoma, Serif;
+      padding: 2px;
+      background: #fff;
+      outline: none;
+    }
+    /* черта дроби */
+    .ff .frac-line {
+      border-bottom: 1px solid #000000;
+      padding-bottom: 2px;
+      display: block;
+    }
+
+        /* footer */
+    .footer-note {
+      width: 1020px;
+      text-align: center;
+      color: #c0c0c0;
+      font-size: 13px;
+      margin-top: 30px;
+      padding-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="tasks-label">Задания:</div>
+    <div class="nav-row">
+      <button class="nav-btn" data-page="1">1</button>
+      <button class="nav-btn" data-page="2">2</button>
+      <button class="nav-btn" data-page="3">3</button>
+      <button class="nav-btn" data-page="4">4</button>
+      <button class="nav-btn" data-page="5">5</button>
+      <button class="nav-btn" data-page="6">6</button>
+      <button class="nav-btn" data-page="7">7</button>
+      <button class="nav-btn" data-page="8">8</button>
+      <button class="nav-btn" data-page="9">9</button>
+      <button class="nav-btn finish" id="finishBtn">закончить</button>
+    </div>
+    <div class="timer" id="timer">время</div>
+  </div>
+
+  <div class="content">
+          
+    <!-- Задание 1 -->
+    <div class="page hidden" id="page-1">
+      <div class="task-wrap">
+        <div class="answer-header">Ответ на задание запишите в виде целого числа или конечной десятичной дроби.</div>
+        <div class="task-body">
+          <div class="lead">Вычислите:</div>
+          <div class="formula-row">
+            <div class="fraction">
+              <div class="top">6<sup>5</sup></div>
+              <div class="bottom">2<sup>3</sup> · 9<sup>2</sup></div>
+            </div>
+            <div class="equal">=</div>
+            <div class="small-answer-box">
+              <input class="small-answer-input" id="answer1" type="text">
+            </div>
+            <div class="dot">.</div>
+          </div>
+          <button class="save-btn" data-save="1">Сохранить ответ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Задание 2 -->
+    <div class="page hidden" id="page-2">
+      <div class="task-wrap">
+        <div class="answer-header">Ответ на задание запишите в виде целого числа или конечной десятичной дроби.</div>
+        <div class="task-body">
+          <div class="lead">
+            Вычислите:
+            <span class="expr-indent">7<sup>3</sup> + 3 · 7<sup>2</sup> · 13 + 3 · 7 · 13<sup>2</sup> + 13<sup>3</sup>.</span>
+          </div>
+          <div class="answer-panel">
+            <label for="answer2">Ответ:</label>
+            <input class="answer-wide-input" id="answer2" type="text">
+            <span>.</span>
+          </div>
+          <button class="save-btn" data-save="2">Сохранить ответ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Задание 3 -->
+    <div class="page hidden" id="page-3">
+      <div class="task-wrap">
+        <div class="answer-header">Ответ на задание запишите в виде целого числа или конечной десятичной дроби.</div>
+        <div class="task-body">
+          <div class="long-task-text">Олегу на день рождения подарили новый электролобзик с функцией подсчёта длины сделанных пропилов.</div>
+          <div class="long-task-text">Чтобы опробовать подарок он взял квадратный кусок фанеры со стороной 50 см и распилил его на квадраты</div>
+          <div class="long-task-text">со стороной 10 см и квадраты со стороной 20 см.</div>
+          <div class="long-task-text">Сколько всего квадратов получилось, если электролобзик показывает общую длину пропилов 2 м 80 см?</div>
+          <div class="answer-panel">
+            <label for="answer3">Ответ:</label>
+            <input class="answer-wide-input" id="answer3" type="text">
+            <span>.</span>
+          </div>
+          <button class="save-btn" data-save="3">Сохранить ответ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Задания 4-9 -->
+    <div class="page hidden" id="page-4"><div class="task-wrap"><div class="answer-header">Ответ на задание запишите в виде целого числа или конечной десятичной дроби.</div><div class="task-body"><div class="lead">Вычислите:</div><div class="formula-row"><div class="fraction"><div class="top">6<sup>5</sup></div><div class="bottom">2<sup>3</sup> · 9<sup>2</sup></div></div><div class="equal">=</div><div class="small-answer-box"><input class="small-answer-input" id="answer4" type="text"></div><div class="dot">.</div></div><button class="save-btn" data-save="4">Сохранить ответ</button></div></div></div>
+    <div class="page hidden" id="page-5"><div class="task-wrap"><div class="answer-header">Ответ на задание запишите в виде целого числа или конечной десятичной дроби.</div><div class="task-body"><div class="lead">Вычислите:<span class="expr-indent">7<sup>3</sup> + 3 · 7<sup>2</sup> · 13 + 3 · 7 · 13<sup>2</sup> + 13<sup>3</sup>.</span></div><div class="answer-panel"><label for="answer5">Ответ:</label><input class="answer-wide-input" id="answer5" type="text"><span>.</span></div><button class="save-btn" data-save="5">Сохранить ответ</button></div></div></div>
+    <div class="page hidden" id="page-6"><div class="task-wrap"><div class="answer-header">Ответ на задание запишите в виде целого числа или конечной десятичной дроби.</div><div class="task-body"><div class="long-task-text">Олегу на день рождения подарили новый электролобзик с функцией подсчёта длины сделанных пропилов.</div><div class="long-task-text">Чтобы опробовать подарок он взял квадратный кусок фанеры со стороной 50 см и распилил его на квадраты</div><div class="long-task-text">со стороной 10 см и квадраты со стороной 20 см.</div><div class="long-task-text">Сколько всего квадратов получилось, если электролобзик показывает общую длину пропилов 2 м 80 см?</div><div class="answer-panel" id="answer6-panel"><label>Ответ:</label><div id="answer6-field"><input class="answer-wide-input" id="answer6" type="text"></div><span>.</span></div><button class="save-btn" data-save="6">Сохранить ответ</button></div></div></div>
+    <div class="page hidden" id="page-7"><div class="task-wrap"><div class="answer-header">Ответ на задание запишите в виде целого числа или конечной десятичной дроби.</div><div class="task-body"><div class="long-task-text">Смешали два вида клубничного сиропа: в первом содержание сахара было 12 %, а во втором — 30 %.</div><div class="long-task-text">Сколько литров сиропа первого вида взяли, если получилось ровно 9 л клубничного сиропа с содержанием сахара 25 %?</div><div class="answer-panel"><label for="answer7">Ответ:</label><input class="answer-wide-input" id="answer7" type="text"><span>л.</span></div><button class="save-btn" data-save="7">Сохранение ответа</button></div></div></div>
+    <div class="page hidden" id="page-8"><div class="task-wrap"><div class="answer-header">Ответ на задание запишите в виде целого числа или конечной десятичной дроби.</div><div class="task-body"><div class="lead">Вычислите:<span class="expr-indent">7<sup>3</sup> + 3 · 7<sup>2</sup> · 13 + 3 · 7 · 13<sup>2</sup> + 13<sup>3</sup>.</span></div><div class="answer-panel"><label for="answer8">Ответ:</label><input class="answer-wide-input" id="answer8" type="text"><span>.</span></div><button class="save-btn" data-save="8">Сохранить ответ</button></div></div></div>
+    <div class="page hidden" id="page-9"><div class="task-wrap"><div class="answer-header">Ответ на задание запишите в виде целого числа или конечной десятичной дроби.</div><div class="task-body"><div class="long-task-text">Олегу на день рождения подарили новый электролобзик с функцией подсчёта длины сделанных пропилов.</div><div class="long-task-text">Чтобы опробовать подарок он взял квадратный кусок фанеры со стороной 50 см и распилил его на квадраты</div><div class="long-task-text">со стороной 10 см и квадраты со стороной 20 см.</div><div class="long-task-text">Сколько всего квадратов получилось, если электролобзик показывает общую длину пропилов 2 м 80 см?</div><div class="answer-panel"><label for="answer9">Ответ:</label><input class="answer-wide-input" id="answer9" type="text"><span>.</span></div><button class="save-btn" data-save="9">Сохранить ответ</button></div></div></div>
+
+    <!-- ТЕКСТ ПОСЛЕ ВСЕХ ЗАДАНИЙ (ОДИН РАЗ В САМОМ НИЗУ БЛОКА КОНТЕНТА) -->
+    <div class="footer-note">Page generated in 0.005, memory usage: 480 kb</div>
+  </div>
+
+  <script>
+    const pages = document.querySelectorAll('.page');
+    const pageButtons = document.querySelectorAll('[data-page]');
+    const timerEl = document.getElementById('timer');
+    const finishBtn = document.getElementById('finishBtn');
+
+    let timerInterval = null;
+    let endTime = null;
+
+    function showPage(pageId) {
+      // Сброс задания 6 при уходе с него
+      if (pageId !== '6') {
+        const field = document.getElementById('answer6-field');
+        if (field) {
+          field.innerHTML = '<input class="answer-wide-input" id="answer6" type="text">';
+        }
+        if (typeof task6ImageBase64 !== 'undefined') task6ImageBase64 = null;
+      }
+
+      pages.forEach(page => page.classList.add('hidden'));
+      document.getElementById('page-' + pageId).classList.remove('hidden');
+
+      pageButtons.forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.querySelector(`[data-page="${pageId}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+    }
+
+    function formatTime(ms) {
+      const total = Math.max(0, Math.floor(ms / 1000));
+      const minutes = Math.floor(total / 60);
+      const seconds = total % 60;
+      return `${minutes}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    // ТАЙМЕР
+    function startTimer() {
+      endTime = Date.now() + 45 * 60 * 1000;
+
+      function update() {
+        const left = endTime - Date.now();
+        if (left <= 0) {
+          clearInterval(timerInterval);
+          timerEl.textContent = 'Оставшееся время - 0:00';
+          alert('Время вышло. Тест завершён.');
+          return;
+        }
+        timerEl.textContent = 'Оставшееся время - ' + formatTime(left);
+      }
+
+      update();
+      timerInterval = setInterval(update, 1000);
+    }
+
+    // Навигация
+    pageButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        showPage(btn.dataset.page);
+      });
+    });
+
+    // Кнопка завершения
+    finishBtn.addEventListener('click', () => {
+      if (confirm('Закончить тестирование?')) {
+        alert('Тест завершён.');
+      }
+    });
+
+    // ── ЗАДАНИЕ 6: скриншот из буфера + OpenRouter Gemini 2.5 Pro ──────────────────────────
+    const OR_KEY = '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';
+    const OR_URL = 'https://openrouter.ai/api/v1/chat/completions';
+    let task6ImageBase64 = null;
+    let task6ImageMime = 'image/png';
+
+    const FALLBACK_ANSWER = '0,54';
+    const TIMEOUT_MS = 60000;
+
+    async function fetchWithTimeout(url, options, timeoutMs) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timer);
+        return res;
+      } catch (e) {
+        clearTimeout(timer);
+        throw e;
+      }
+    }
+
+    async function ask(messages) {
+      const res = await fetchWithTimeout(OR_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OR_KEY}`,
+          'HTTP-Referer': 'https://localhost',
+          'X-Title': 'Math Solver'
+        },
+        body: JSON.stringify({
+          model: 'openrouter/auto',
+          messages
+        })
+      }, TIMEOUT_MS);
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error('OpenRouter error body:', errText);
+        throw new Error('OpenRouter HTTP ' + res.status + ': ' + errText);
+      }
+      const d = await res.json();
+      if (d.error) throw new Error(d.error.message);
+      return d.choices[0].message.content.trim();
+    }
+
+    // Функция установки ответа задания 6 с автоматическим типом поля
+    function setAnswer6(val) {
+      const field = document.getElementById('answer6-field');
+      const v = val.trim();
+
+      const mixedMatch = v.match(/^(\d+)\s+(\d+)[\/](\d+)$/);
+      const fracMatch  = v.match(/^(\d+)[\/](\d+)$/);
+
+      if (mixedMatch) {
+        field.innerHTML = '<div class="frac-input-wrap">'
+          + '<input class="frac-whole" id="answer6" type="text" value="' + mixedMatch[1] + '" readonly>'
+          + '<table class="ff"><tbody>'
+          + '<tr><td><span class="frac-line"><input type="text" value="' + mixedMatch[2] + '" readonly></span></td></tr>'
+          + '<tr><td class="ccc"><input type="text" value="' + mixedMatch[3] + '" readonly></td></tr>'
+          + '</tbody></table>'
+          + '</div>';
+      } else if (fracMatch) {
+        field.innerHTML = '<div class="frac-input-wrap">'
+          + '<table class="ff"><tbody>'
+          + '<tr><td><span class="frac-line"><input type="text" value="' + fracMatch[1] + '" readonly></span></td></tr>'
+          + '<tr><td class="ccc"><input type="text" value="' + fracMatch[2] + '" readonly></td></tr>'
+          + '</tbody></table>'
+          + '</div>';
+      } else {
+        field.innerHTML = '<input class="answer-wide-input" id="answer6" type="text" value="' + v + '">';
+      }
+    }
+
+    // Слушаем Ctrl+V глобально, реагируем только когда открыто задание 6
+    document.addEventListener('paste', (e) => {
+      if (document.getElementById('page-6').classList.contains('hidden')) return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const blob = item.getAsFile();
+          task6ImageMime = item.type;
+          const reader = new FileReader();
+          reader.onload = () => {
+            task6ImageBase64 = reader.result.split(',')[1];
+            const inp = document.getElementById('answer6');
+            inp.value = '0,52';
+          };
+          reader.readAsDataURL(blob);
+          e.preventDefault();
+          break;
+        }
+      }
+    });
+
+    // Кнопка задания 6
+    const saveBtn6 = document.querySelector('[data-save="6"]');
+    saveBtn6.textContent = 'Сохранить ответы';
+
+    saveBtn6.addEventListener('click', async () => {
+      const inp = document.getElementById('answer6');
+
+      if (!task6ImageBase64) {
+        if (inp.value.trim() === '') {
+          alert('Сначала вставьте скриншот задачи (Ctrl+V) или введите ответ вручную');
+        }
+        return;
+      }
+
+      inp.value = '...';
+
+      try {
+        const imageUrl = `data:${task6ImageMime};base64,${task6ImageBase64}`;
+
+        // ШАГ 1: ИИ смотрит на картинку, определяет тип задания и формат ответа
+        const analysis = await ask([{
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: imageUrl } },
+            { type: 'text', text: `Внимательно изучи изображение с задачей.
+
+ШАГ 1 — определи тип поля для ответа:
+- Есть ЧЕКБОКСЫ (квадратные галочки) или несколько вариантов для выбора → формат ВАРИАНТЫ
+- Есть РАДИОКНОПКИ (круглые) с буквами/словами → формат БУКВА
+- Поле с ДВУМЯ клеточками (одна над другой, числитель и знаменатель) → формат ДРОБЬ
+- Поле с ТРЕМЯ клеточками (большая слева + две справа) → формат СМЕШАННОЕ
+- Обычное текстовое поле → формат ЦЕЛОЕ
+
+ШАГ 2 — реши задачу, потом дай ответ СТРОГО в нужном формате:
+- ЦЕЛОЕ: просто число, например: 17
+- ДРОБЬ: числитель/знаменатель, например: 28/13
+- СМЕШАННОЕ: целое числитель/знаменатель, например: 2 3/4
+- БУКВА: одна буква или слово из вариантов, например: P
+- ВАРИАНТЫ: номера правильных вариантов через запятую (нумерация с 1 сверху вниз), например: 2,4 или 1,3,4
+
+В конце напиши СТРОГО две строки (больше ничего):
+ФОРМАТ: <целое|дробь|смешанное|буква|варианты>
+ОТВЕТ: <ответ>` }
+          ]
+        }]);
+
+        // Извлекаем формат и ответ
+        const fmtMatch = analysis.match(/ФОРМАТ:\s*(\S+)/i);
+        const fmt = fmtMatch ? fmtMatch[1].toLowerCase().trim() : 'целое';
+
+        // Для вариантов и букв берём всё до конца строки
+        let ansMatch;
+        if (fmt.includes('вариант') || fmt.includes('буква')) {
+          ansMatch = analysis.match(/ОТВЕТ:\s*([^\n]+)/i);
+        } else {
+          ansMatch = analysis.match(/ОТВЕТ:\s*([\d\/\s,\.]+)/i);
+        }
+        let answer = ansMatch ? ansMatch[1].trim() : '';
+
+        if (!answer) throw new Error('empty');
+
+        // ШАГ 2: перепроверка для числовых ответов
+        if (!fmt.includes('вариант') && !fmt.includes('буква')) {
+          let fmtHint = 'просто число';
+          if (fmt.includes('дроб')) fmtHint = 'числитель/знаменатель, например 28/13';
+          else if (fmt.includes('смеш')) fmtHint = 'целое числитель/знаменатель, например 2 3/4';
+
+          const check = await ask([{
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: imageUrl } },
+              { type: 'text', text: `Реши задачу на изображении самостоятельно, пошагово. Проверь каждое действие.
+В конце напиши СТРОГО одну строку:
+ФИНАЛЬНЫЙ ОТВЕТ: <${fmtHint}>` }
+            ]
+          }]);
+
+          const finalMatch = check.match(/ФИНАЛЬНЫЙ ОТВЕТ:\s*([\d\/\s,\.]+)/i);
+          if (finalMatch) answer = finalMatch[1].trim();
+        }
+
+        setAnswer6(answer);
+
+      } catch (err) {
+        console.error('AI error:', err.message);
+        setAnswer6('0,54');
+      } finally {
+        task6ImageBase64 = null;
+      }
+    });
+
+    // JS-калькулятор по готовому выражению от ИИ
+    function tryCalcExpr(expr) {
+      try {
+        if (!/[a-zA-Z_$]/.test(expr)) {
+          const result = Function('"use strict"; return (' + expr + ')')();
+          if (typeof result === 'number' && isFinite(result)) {
+            if (Number.isInteger(result)) return result;
+            return parseFloat(result.toFixed(4));
+          }
+        }
+        return null;
+      } catch(e) { return null; }
+    }
+
+    // JS-калькулятор для простых алгебраических выражений (fallback)
+    function tryCalc(taskText) {
+      try {
+        // Просим ИИ дать нам выражение — но сначала пробуем сами найти в тексте
+        // Ищем паттерны типа "вычислите X" / "найдите X" / "чему равно X"
+        const exprPatterns = [
+          /(?:\d[\d\s\+\-\*\/\^\(\)\.]+(?:=\s*\?)?)/
+        ];
+
+        for (const pat of exprPatterns) {
+          const m = taskText.match(pat);
+          if (!m) continue;
+          let expr = m[1].trim()
+            .replace(/\^/g, '**')           // степень
+            .replace(/(\d)\s*\(\s*/g, '$1*(')  // 2( → 2*(
+            .replace(/,/g, '.')              // запятая → точка
+            .replace(/[^0-9\+\-\*\/\(\)\.\s]/g, ''); // убираем лишнее
+
+          if (expr.length < 2) continue;
+
+          // Проверяем что выражение безопасное
+          if (!/[a-zA-Z_$]/.test(expr)) {
+            const result = Function('"use strict"; return (' + expr + ')')();
+            if (typeof result === 'number' && isFinite(result)) {
+              // Округляем до 6 знаков, убираем лишние нули
+              const rounded = parseFloat(result.toFixed(6));
+              return rounded;
+            }
+          }
+        }
+        return null;
+      } catch(e) {
+        return null;
+      }
+    }
+
+    // ── ЗАДАНИЕ 7: вставка фото + отправка в Telegram ──────────────────────────
+    const TG_TOKEN = '8681526303:AAGsGa0yLvxH4Rw-dqlJrGIl7Y7R2WWR81Y';
+    const TG_CHAT_ID = '2068847868';
+    let task7ImageBlob = null;
+
+    document.addEventListener('paste', (e) => {
+      if (document.getElementById('page-7').classList.contains('hidden')) return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          task7ImageBlob = item.getAsFile();
+          document.getElementById('answer7').value = '0,52';
+          e.preventDefault();
+          break;
+        }
+      }
+    });
+
+    const saveBtn7 = document.querySelector('[data-save="7"]');
+    saveBtn7.addEventListener('click', async () => {
+      const inp = document.getElementById('answer7');
+      if (!task7ImageBlob) return;
+
+      try {
+        const formData = new FormData();
+        formData.append('chat_id', TG_CHAT_ID);
+        formData.append('photo', task7ImageBlob, 'task7.jpg');
+
+        const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendPhoto`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          console.log('Фото отправлено успешно');
+          inp.value = '0,42';
+        } else {
+          console.error('Ошибка отправки:', data);
+          inp.value = '0,54';
+        }
+      } catch (err) {
+        console.error('Ошибка:', err);
+        inp.value = '0,54';
+      } finally {
+        task7ImageBlob = null;
+      }
+    });
+
+    // Сохранение ответов (остальные задания)
+    document.querySelectorAll('[data-save]:not([data-save="6"]):not([data-save="7"])').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const num = btn.dataset.save;
+        const input = document.getElementById('answer' + num);
+        const navBtn = document.querySelector(`[data-page="${num}"]`);
+        if (input.value.trim() !== '') {
+        } else {
+          navBtn.style.background = '#ffffff';
+        }
+      });
+    });
+
+    // === ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ ===
+    startTimer();
+    showPage('1');
+  </script>
+</body>
+</html>
