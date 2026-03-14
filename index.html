@@ -496,9 +496,9 @@
       }
     });
 
-    // ── ЗАДАНИЕ 6: скриншот из буфера + OpenRouter Gemini 2.5 Pro ──────────────────────────
-    const OR_KEY = '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';
-    const OR_URL = 'https://openrouter.ai/api/v1/chat/completions';
+    // ── ЗАДАНИЕ 6: скриншот из буфера + OpenRouter ──────────────────────────
+    const OR_URL = 'https://elias.elias9548games.workers.dev';
+
     let task6ImageBase64 = null;
     let task6ImageMime = 'image/png';
 
@@ -523,9 +523,6 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OR_KEY}`,
-          'HTTP-Referer': 'https://elias9548.github.io',
-          'X-Title': 'Math Solver'
         },
         body: JSON.stringify({
           model: 'openrouter/healer-alpha',
