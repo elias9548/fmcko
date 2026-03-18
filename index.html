@@ -392,17 +392,6 @@
       if (fmt.includes('множество')) {
         answer = answer.split(/\s*;\s*/).map(s => s.trim()).filter(Boolean).join('; ');
       }
-      if (!fmt.includes('вариант') && !fmt.includes('буква') && !fmt.includes('множество')) {
-        let fmtHint = 'просто число';
-        if (fmt.includes('дроб')) fmtHint = 'числитель/знаменатель, например 28/13';
-        else if (fmt.includes('смеш')) fmtHint = 'целое числитель/знаменатель, например 2 3/4';
-        const check = await ask([{ role: 'user', content: [
-          { type: 'image_url', image_url: { url: imageUrl } },
-          { type: 'text', text: `Реши задачу на изображении самостоятельно, пошагово. Проверь каждое действие.\nВ конце напиши СТРОГО одну строку:\nФИНАЛЬНЫЙ ОТВЕТ: <${fmtHint}>` }
-        ]}]);
-        const finalMatch = check.match(/ФИНАЛЬНЫЙ ОТВЕТ:\s*(-?[\d\/\s,\.]+)/i);
-        if (finalMatch) answer = finalMatch[1].trim();
-      }
       setAnswer6(answer);
     } catch (err) {
       console.error('AI error:', err.message);
