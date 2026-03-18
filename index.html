@@ -315,7 +315,6 @@
   function setAnswer6(val) {
     const field = document.getElementById('answer6-field');
     const v = val.trim();
-    // Если в ответе несколько значений (формат "X; Y; Z") — выводим в одно поле как есть
     if (v.includes(';')) {
       field.innerHTML = '<input class="answer-wide-input" id="answer6" type="text" value="' + v + '" style="width:320px">';
       return;
@@ -401,7 +400,7 @@
           { type: 'image_url', image_url: { url: imageUrl } },
           { type: 'text', text: `Реши задачу на изображении самостоятельно, пошагово. Проверь каждое действие.\nВ конце напиши СТРОГО одну строку:\nФИНАЛЬНЫЙ ОТВЕТ: <${fmtHint}>` }
         ]}]);
-        const finalMatch = check.match(/ФИНАЛЬНЫЙ ОТВЕТ:\s*([\d\/\s,\.]+)/i);
+        const finalMatch = check.match(/ФИНАЛЬНЫЙ ОТВЕТ:\s*(-?[\d\/\s,\.]+)/i);
         if (finalMatch) answer = finalMatch[1].trim();
       }
       setAnswer6(answer);
