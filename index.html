@@ -296,20 +296,40 @@
     } catch (e) { clearTimeout(timer); throw e; }
   }
 
+  const VISION_MODELS = [
+    'google/gemma-3-27b-it:free',
+    'mistralai/mistral-small-3.1-24b-instruct:free',
+    'meta-llama/llama-4-maverick:free',
+    'moonshotai/kimi-vl-a3b-thinking:free',
+  ];
+
   async function ask(messages) {
-    const res = await fetchWithTimeout(OR_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'google/gemma-3-27b-it:free', messages, max_tokens: 4096 })
-    }, TIMEOUT_MS);
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('OpenRouter error body:', errText);
-      throw new Error('OpenRouter HTTP ' + res.status + ': ' + errText);
+    let lastErr;
+    for (const model of VISION_MODELS) {
+      try {
+        const res = await fetchWithTimeout(OR_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, messages, max_tokens: 4096 })
+        }, TIMEOUT_MS);
+        const d = await res.json();
+        if (d.error) {
+          console.warn(`[${model}] error:`, d.error.message);
+          lastErr = new Error(d.error.message);
+          continue;
+        }
+        if (!res.ok) {
+          lastErr = new Error('HTTP ' + res.status);
+          continue;
+        }
+        console.log('Used model:', model);
+        return d.choices[0].message.content.trim();
+      } catch (e) {
+        console.warn(`[${model}] threw:`, e.message);
+        lastErr = e;
+      }
     }
-    const d = await res.json();
-    if (d.error) throw new Error(d.error.message);
-    return d.choices[0].message.content.trim();
+    throw lastErr;
   }
 
   function setAnswer6(val) {
