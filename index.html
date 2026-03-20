@@ -472,23 +472,4 @@
   document.querySelectorAll('[data-save]:not([data-save="6"]):not([data-save="7"])').forEach(btn => {
     btn.addEventListener('click', () => {
       const num = parseInt(btn.dataset.save);
-      const input = document.getElementById('answer' + num);
-      if (!input) return;
-      const val = input.value.trim();
-      if (val === '') {
-        alert('Введите ответ перед сохранением.');
-        return;
-      }
-      savedAnswers[num] = val;
-      const navBtn = document.querySelector(`[data-page="${num}"]`);
-      if (navBtn) navBtn.classList.add('yellow');
-      const next = num + 1;
-      if (next <= 9) showPage(String(next));
-    });
-  });
-
-  startTimer();
-  showPage('1');
-</script>
-</body>
-</html>
+      const input = document.getElementById('answer' + 
