@@ -299,7 +299,9 @@
   const MODELS = [
     'nvidia/nemotron-nano-12b-v2-vl:free',
     'google/gemma-3-12b-it:free',
-    'google/gemma-3-27b-it:free'
+    'google/gemma-3-27b-it:free',
+    'nvidia/llama-nemotron-embed-vl-1b-v2:free',
+    'mistralai/mistral-small-3.1-24b-instruct:free'
   ];
 
   async function askModel(model, messages) {
@@ -337,7 +339,7 @@
 
   async function askWithVoting(messages) {
     const MAX_WAIT = 120000;   // 2 минуты общий максимум
-    const EXTRA_WAIT = 30000;  // +30 сек после первого ответа
+    const EXTRA_WAIT = 45000;  // +45 сек после первого ответа
 
     let firstAnswerTime = null;
     const controllers = MODELS.map(() => new AbortController());
@@ -391,21 +393,32 @@
 
     // Немотрон = индекс 0
     const nemotron = parsed[0];
-    const answers = parsed.map(p => p ? p.answer : null);
 
-    // Голосование
-    const [a0, a1, a2] = answers;
+    // Считаем голоса по ответам (только успешные)
+    const votes = {};
+    parsed.forEach((p, i) => {
+      if (!p || !p.answer) return;
+      const key = p.answer;
+      if (!votes[key]) votes[key] = { count: 0, result: p };
+      votes[key].count++;
+    });
 
-    // Все три совпали
-    if (a0 && a1 && a2 && a0 === a1 && a1 === a2) {
-      return { result: parsed[0], uncertain: false };
+    // Сортируем по количеству голосов
+    const sorted = Object.values(votes).sort((a, b) => b.count - a.count);
+    const totalVoted = sorted.reduce((s, v) => s + v.count, 0);
+
+    if (sorted.length === 0) {
+      // Никто не ответил
+      return { result: nemotron || null, uncertain: true };
     }
-    // 2 из 3 совпали
-    if (a0 && a1 && a0 === a1) return { result: parsed[0], uncertain: false };
-    if (a0 && a2 && a0 === a2) return { result: parsed[0], uncertain: false };
-    if (a1 && a2 && a1 === a2) return { result: parsed[1], uncertain: false };
 
-    // Все разные — берём немотрон, ставим флаг
+    const best = sorted[0];
+    // Большинство (больше половины) — уверенный ответ
+    if (best.count > totalVoted / 2) {
+      return { result: best.result, uncertain: false };
+    }
+
+    // Ничья или все разные — берём немотрон или первого кто ответил
     const fallback = nemotron || parsed.find(p => p !== null);
     return { result: fallback, uncertain: true };
   }
