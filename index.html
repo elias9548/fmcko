@@ -173,7 +173,7 @@
       <div class="answer_flex" id="answer6-panel">
         <span style="margin-right:8px;">Ответ:</span>
         <div id="answer6-field"><input class="answer-wide-input" id="answer6" type="text"></div>
-        <span style="margin-left:4px;">.</span>
+        <span class="answer6-dot" style="margin-left:4px;">.</span>
       </div>
       <button data-save="6">Сохранить ответы</button>
     </div>
@@ -469,10 +469,8 @@
       }
     }
 
-    // Если все три модели дали разные ответы — меняем точку на ;
-    if (uncertain) {
-      dotSpan.textContent = ';';
-    }
+    // Если модели не пришли к единому мнению — точка остаётся точкой
+    dotSpan.textContent = '.';
   }
 
   document.addEventListener('paste', (e) => {
