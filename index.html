@@ -296,13 +296,7 @@
     } catch (e) { clearTimeout(timer); throw e; }
   }
 
-  const MODELS = [
-    'nvidia/nemotron-nano-12b-v2-vl:free',
-    'google/gemma-3-12b-it:free',
-    'google/gemma-3-27b-it:free',
-    'nvidia/llama-nemotron-embed-vl-1b-v2:free',
-    'mistralai/mistral-small-3.1-24b-instruct:free'
-  ];
+  const MODEL = 'nvidia/nemotron-nano-12b-v2-vl:free';
 
   async function askModel(model, messages) {
     const res = await fetchWithTimeout(OR_URL, {
@@ -338,94 +332,20 @@
   }
 
   async function askWithVoting(messages) {
-    const MAX_WAIT = 120000;   // 2 минуты общий максимум
-    const EXTRA_WAIT = 45000;  // +45 сек после первого ответа
-
-    let firstAnswerTime = null;
-    const controllers = MODELS.map(() => new AbortController());
-
-    // Через MAX_WAIT — убиваем всех кто не ответил
-    const globalTimer = setTimeout(() => {
-      controllers.forEach(c => c.abort());
-    }, MAX_WAIT);
-
-    async function askModelAdaptive(model, messages, controller) {
-      const res = await fetch(OR_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, messages, max_tokens: 4096 }),
-        signal: controller.signal
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error('HTTP ' + res.status + ': ' + errText);
-      }
-      const d = await res.json();
-      if (d.error) throw new Error(d.error.message);
-      console.log('Used model:', d.model, '→', d.choices[0].message.content.trim().slice(-100));
-      const text = d.choices[0].message.content.trim();
-
-      // Первый ответ — запускаем +30 сек для остальных
-      if (!firstAnswerTime) {
-        firstAnswerTime = Date.now();
-        setTimeout(() => {
-          controllers.forEach(c => c.abort());
-        }, EXTRA_WAIT);
-      }
-      return text;
+    try {
+      const raw = await askModel(MODEL, messages);
+      const parsed = parseAnswer(raw);
+      console.log(`Model ${MODEL}: ОТВЕТ=${parsed.answer} ФОРМАТ=${parsed.fmt}`);
+      return { result: parsed, uncertain: false };
+    } catch (err) {
+      console.warn(`Model ${MODEL} failed:`, err.message || err);
+      return { result: null, uncertain: true };
     }
-
-    const results = await Promise.allSettled(
-      MODELS.map((m, i) => askModelAdaptive(m, messages, controllers[i]))
-    );
-    clearTimeout(globalTimer);
-
-    const parsed = results.map((r, i) => {
-      if (r.status === 'fulfilled') {
-        const p = parseAnswer(r.value);
-        console.log(`Model ${MODELS[i]}: ОТВЕТ=${p.answer} ФОРМАТ=${p.fmt}`);
-        return p;
-      } else {
-        console.warn(`Model ${MODELS[i]} failed:`, r.reason?.message || r.reason);
-        return null;
-      }
-    });
-
-    // Немотрон = индекс 0
-    const nemotron = parsed[0];
-
-    // Считаем голоса по ответам (только успешные)
-    const votes = {};
-    parsed.forEach((p, i) => {
-      if (!p || !p.answer) return;
-      const key = p.answer;
-      if (!votes[key]) votes[key] = { count: 0, result: p };
-      votes[key].count++;
-    });
-
-    // Сортируем по количеству голосов
-    const sorted = Object.values(votes).sort((a, b) => b.count - a.count);
-    const totalVoted = sorted.reduce((s, v) => s + v.count, 0);
-
-    if (sorted.length === 0) {
-      // Никто не ответил
-      return { result: nemotron || null, uncertain: true };
-    }
-
-    const best = sorted[0];
-    // Большинство (больше половины) — уверенный ответ
-    if (best.count > totalVoted / 2) {
-      return { result: best.result, uncertain: false };
-    }
-
-    // Ничья или все разные — берём немотрон или первого кто ответил
-    const fallback = nemotron || parsed.find(p => p !== null);
-    return { result: fallback, uncertain: true };
   }
 
-  // Совместимость — старый ask теперь просто вызывает немотрон
+  // Совместимость — ask вызывает единственную модель
   async function ask(messages) {
-    return askModel(MODELS[0], messages);
+    return askModel(MODEL, messages);
   }
 
   function setAnswer6(val, uncertain) {
