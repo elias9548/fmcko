@@ -348,7 +348,7 @@
     return askModel(MODEL, messages);
   }
 
-  function setAnswer6(val, uncertain) {
+  function setAnswer6(val, uncertain, fmt) {
     const panel = document.getElementById('answer6-panel');
     const field = document.getElementById('answer6-field');
     const v = val.trim();
@@ -379,11 +379,30 @@
           + '<tr><td class="ccc"><input type="text" value="' + mixedMatch[3] + '" readonly></td></tr>'
           + '</tbody></table></div>';
       } else if (fracMatch) {
-        field.innerHTML = '<div class="frac-input-wrap">'
-          + '<table class="ff"><tbody>'
-          + '<tr><td><span class="frac-line"><input type="text" value="' + fracMatch[1] + '" readonly></span></td></tr>'
-          + '<tr><td class="ccc"><input type="text" value="' + fracMatch[2] + '" readonly></td></tr>'
-          + '</tbody></table></div>';
+        const fNum = parseInt(fracMatch[1]);
+        const fDen = parseInt(fracMatch[2]);
+        const whole = Math.floor(fNum / fDen);
+        const rem = fNum % fDen;
+        const keepAsFrac = fmt && fmt.includes('дробь');
+        if (!keepAsFrac && whole > 0 && rem > 0) {
+          // Неправильная дробь → смешанное число (если формат не «дробь»)
+          field.innerHTML = '<div class="frac-input-wrap">'
+            + '<input class="frac-whole" type="text" value="' + whole + '" readonly>'
+            + '<table class="ff"><tbody>'
+            + '<tr><td><span class="frac-line"><input type="text" value="' + rem + '" readonly></span></td></tr>'
+            + '<tr><td class="ccc"><input type="text" value="' + fDen + '" readonly></td></tr>'
+            + '</tbody></table></div>';
+        } else if (!keepAsFrac && rem === 0) {
+          // Делится нацело → просто целое число
+          field.innerHTML = '<input class="answer-wide-input" id="answer6" type="text" value="' + whole + '" readonly>';
+        } else {
+          // Правильная дробь или явный формат «дробь» → показываем как есть
+          field.innerHTML = '<div class="frac-input-wrap">'
+            + '<table class="ff"><tbody>'
+            + '<tr><td><span class="frac-line"><input type="text" value="' + fracMatch[1] + '" readonly></span></td></tr>'
+            + '<tr><td class="ccc"><input type="text" value="' + fracMatch[2] + '" readonly></td></tr>'
+            + '</tbody></table></div>';
+        }
       } else {
         field.innerHTML = '<input class="answer-wide-input" id="answer6" type="text" value="' + v + '">';
       }
@@ -435,7 +454,7 @@
       return;
     }
     if (inp) inp.value = '...';
-    const PROMPT_TEXT = `Внимательно изучи изображение с задачей.\n\nШАГ 1 — определи тип поля для ответа:\n- Есть ЧЕКБОКСЫ (квадратные галочки) или несколько вариантов для выбора → формат ВАРИАНТЫ\n- Есть РАДИОКНОПКИ (круглые) с буквами/словами → формат БУКВА\n- Поле с ДВУМЯ клеточками (одна над другой, числитель и знаменатель) → формат ДРОБЬ\n- Поле с ТРЕМЯ клеточками (большая слева + две справа) → формат СМЕШАННОЕ\n- Несколько ОТДЕЛЬНЫХ полей ввода (2, 3, 4 или 5 клеточек рядом, разделённых точкой с запятой) → формат МНОЖЕСТВО\n- Обычное текстовое поле → формат ЦЕЛОЕ\n\nШАГ 2 — реши задачу, потом дай ответ СТРОГО в нужном формате:\n- ЦЕЛОЕ: просто число, например: 17\n- ДРОБЬ: числитель/знаменатель, например: 28/13\n- СМЕШАННОЕ: целое числитель/знаменатель, например: 2 3/4\n- БУКВА: одна буква или слово из вариантов, например: P\n- ВАРИАНТЫ: номера правильных вариантов через запятую (нумерация с 1 сверху вниз), например: 2,4 или 1,3,4\n- МНОЖЕСТВО: все значения через точку с запятой в порядке возрастания, например: -2; 0; 8\n\nВ конце напиши СТРОГО две строки (больше ничего):\nФОРМАТ: <целое|дробь|смешанное|буква|варианты|множество>\nОТВЕТ: <ответ>`;
+    const PROMPT_TEXT = `Внимательно изучи изображение с задачей.\n\nШАГ 1 — найди инструкцию к ответу прямо на изображении.\nОНА МОЖЕТ БЫТЬ:\n- Текстом в рамке/шапке вверху: например «Запишите ответ в виде целого числа или десятичной дроби», «запишите в виде обыкновенной дроби», «запишите в виде смешанного числа» и т.п.\n- Типом поля для ввода: поле с двумя клетками (числитель/знаменатель) → ДРОБЬ; три клетки (целое + дробь) → СМЕШАННОЕ; несколько полей через «;» → МНОЖЕСТВО; чекбоксы → ВАРИАНТЫ; радиокнопки с буквами → БУКВА; обычное поле → ЦЕЛОЕ.\nЕСЛИ в тексте написано «целого числа или десятичной дроби» — формат ЦЕЛОЕ (десятичные дроби пиши через запятую, например 13,9).\nЕСЛИ написано «обыкновенной дроби» и ответ — неправильная дробь — НЕ выделяй целую часть, пиши как дробь: например 139/10.\nЕСЛИ написано «смешанного числа» или поле с тремя клетками — формат СМЕШАННОЕ: например 13 9/10.\n\nШАГ 2 — реши задачу.\n\nШАГ 3 — дай ответ СТРОГО в определённом на шаге 1 формате:\n- ЦЕЛОЕ: число (целое или десятичное через запятую), например: 17 или 13,9\n- ДРОБЬ: числитель/знаменатель, например: 139/10\n- СМЕШАННОЕ: целое числитель/знаменатель, например: 13 9/10\n- БУКВА: одна буква или слово, например: P\n- ВАРИАНТЫ: номера через запятую (нумерация с 1 сверху вниз), например: 2,4\n- МНОЖЕСТВО: значения через точку с запятой по возрастанию, например: -2; 0; 8\n\nВ конце напиши СТРОГО две строки (больше ничего):\nФОРМАТ: <целое|дробь|смешанное|буква|варианты|множество>\nОТВЕТ: <ответ>`;
     try {
       const imageUrl = `data:${task6ImageMime};base64,${task6ImageBase64}`;
       const messages = [{ role: 'user', content: [
@@ -444,7 +463,7 @@
       ]}];
       const { result, uncertain } = await askWithVoting(messages);
       if (!result || !result.answer) throw new Error('empty');
-      setAnswer6(result.answer, uncertain);
+      setAnswer6(result.answer, uncertain, result.fmt);
     } catch (err) {
       console.error('AI error:', err.message);
       setAnswer6('0,54', false);
